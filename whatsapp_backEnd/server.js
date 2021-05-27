@@ -1,9 +1,11 @@
 //importing
 import express from 'express';
-import mongooose from 'mongoose'
-import Messages from  './dbMessages.js'
-import Pusher from 'pusher'
-import cors from 'cors'  
+import mongooose from 'mongoose';
+import Users from  './models/User.js';
+import Messages from  './models/Message.js';
+import Contacts from './models/Contact.js';
+import Pusher from 'pusher';
+import cors from 'cors';  
 
 //app config
 const app=express();
@@ -30,20 +32,32 @@ mongooose.connect(connection_url,{
 const db=mongooose.connection;
 db.once("open",()=>{
     console.log("DB connected");
-    const msgCollection=db.collection("messagecontents");
-    const changeStream=msgCollection.watch();
-    changeStream.on("change",(change)=>{
-        console.log(change);
-        if(change.operationType=='insert'){
+    const messageCollection=db.collection("messages");
+    const contactsCollection=db.collection("contacts")
+    const messageChangeStream=messageCollection.watch();
+    const contactChangeStream=contactsCollection.watch();
+    messageChangeStream.on("change",(change)=>{
+        if(change.operationType==='insert'){
             const messageDetails=change.fullDocument;
-            pusher.trigger("messages","inserted",{
-                name:messageDetails.name,
-                message:messageDetails.message,
-                timestamp:messageDetails.timestamp,
-                recieved:messageDetails.recieved   
+            pusher.trigger('messages','inserted',{
+                content:messageDetails.content,
+                recieved:messageDetails.recieved,
+                timeStamp:messageDetails.timeStamp
             });
         }else{
-            console.log("error triggering pusher");
+            console.log("error triggring messages pusher")
+        }        
+    });
+    contactChangeStream.on("change",(change)=>{
+        if(change.operationType==='insert'){
+            const contactDetails=change.fullDocument;
+            pusher.trigger('contacts','inserted',{
+               messages:contactDetails.messages,
+               name:contactDetails.name,
+               id:contactDetails._id 
+            });
+        }else{
+            console.log("errror triggering contacts pusher");
         }
     });
 });
@@ -52,26 +66,73 @@ db.once("open",()=>{
 //???
 
 //api routes
-app.get("/",(req,res)=>res.status(200).send("Boooom!!"));
+app.get("/60aeb69705c362130f39cbee",async (req,res)=>res.status(200).send("60aeb69705c362130f39cbee"));
 
-app.get('/messages/sync',(req,res)=>{
-    Messages.find((err,data)=>{
-    if(err)
-        res.status(500).send(err);
-    else
-        res.status(200).send(data);
-    });
+
+
+app.get('/:user_id/contacts',async (req,res)=>{
+    await Users.findById(req.params.user_id).lean().populate('contacts').exec((err,user)=>{
+        if(err)
+            res.status(500).send(err);
+        else
+            res.status(200).send(user.contacts);
+    })
 });
 
-app.post("/messages/new",(req,res)=>{
-    const dbMessage=req.body;
-    Messages.create(dbMessage,(err,data)=>{
+app.get('/:contact_id/messages',async (req,res)=>{
+    await Contacts.findById(req.params.contact_id).lean().populate('messages').exec((err,contact)=>{
+        if(err)
+            res.status(500).send(err);
+        else
+            res.status(200).send(contact.messages)    
+    })
+});
+
+app.post("/user/new", (req,res)=>{
+    const dbUser=req.body;
+    Users.create(dbUser,(err,user)=>{        
         if(err) 
             res.status(500).send(err)
         else 
-            res.status(201).send(data)    
+            res.status(201).send(user)    
+    });
+});
+app.post("/:user_id/newContact/", (req,res)=>{
+    const dbComment=req.body;
+    Users.findById(req.params.user_id,(err,user)=>{
+        if(err)
+            res.status(500).send(err);
+        else{
+            Contacts.create(dbComment,(err,contact)=>{
+                if(err)
+                    res.status(500).send(err);
+                else{
+                    user.contacts.push(contact);
+                    user.save();
+                    res.status(201).send(user);
+                }
+            });
+        }    
+    });
+});
+app.post("/:contact_id/newMessage/", (req,res)=>{
+    const dbMessage=req.body;
+    Contacts.findById(req.params.contact_id,(err,contact)=>{
+        if(err)
+            res.status(500).send(err);
+        else{
+            Messages.create(dbMessage,(err,message)=>{
+                if(err)
+                    res.status(500).send(err);
+                else{
+                    contact.messages.push(message);
+                    contact.save();
+                    res.status(201).send(contact);
+                }
+            });
+        }    
     });
 });
 
 //listen
-app.listen(port,()=>console.log('im working on localhost:'+port))
+app.listen(port,()=>console.log('im working on localhost:'+port));

@@ -5,14 +5,12 @@ import MicIcon from '@material-ui/icons/Mic';
 import React, { useState } from 'react';
 import axios from './axios';
 import "./Chat.css";
-function Chat({messages}) {
+function Chat({messages,currContact}) {
     const [input,setInput]=useState('');
     const sendMessage=async (e)=>{
         e.preventDefault();
-        await axios.post("/messages/new",{
-            message:input,
-            name:"Put your name here",
-            timestamp:"just now",
+        await axios.post('/'+currContact+'/newMessage',{
+            content:input,
             recieved:false
         });
         setInput('');
@@ -22,7 +20,7 @@ function Chat({messages}) {
             <div className="chat_header">
                 <Avatar/>
                 <div className="chat_header_info">
-                    <h3>Room name</h3>
+                    <h3>Room</h3>
                     <p>Last see at..</p>
                 </div>
                 <div className="chat_header_right">
@@ -40,10 +38,9 @@ function Chat({messages}) {
             <div className="chat_body">
                 {messages.map((message)=>(                    
                     <p className={"chat_message "+ (message.recieved?"chat_reciever":"")}>
-                        <span className="chat_name">{message.name}</span>
-                        <span>{message.message}</span>
+                        <span>{message.content}</span>
                         <span className="chat_timestamp">
-                            {message.timestamp}
+                            {message.timeStamp}
                         </span>
                     </p> 
                 ))}          

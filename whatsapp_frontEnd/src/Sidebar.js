@@ -5,7 +5,7 @@ import { IconButton,Avatar } from '@material-ui/core';
 import ChatIcon from '@material-ui/icons/Chat';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import SidebarChat from './SidebarChat'
-function Sidebar() {
+function Sidebar({contacts,action}) {
     return (
         <div className="sidebar">
             <div className="sidebar_header"> 
@@ -29,9 +29,9 @@ function Sidebar() {
                 </div>
             </div>
             <div className="sidebar_chat">
-                <SidebarChat/>
-                <SidebarChat/>
-                <SidebarChat/>
+                {contacts.map((contact)=>(
+                    <SidebarChat key={contact._id}  contact={contact}  onClick={()=>action(contact._id)}/>
+                ))}
             </div>
         </div>
     );
