@@ -9,7 +9,7 @@ function Chat({messages,currContact}) {
     const [input,setInput]=useState('');
     const sendMessage=async (e)=>{
         e.preventDefault();
-        await axios.post('/'+currContact+'/newMessage',{
+        await axios.post('/'+currContact._id+'/newMessage',{
             content:input,
             recieved:false
         });
@@ -20,7 +20,7 @@ function Chat({messages,currContact}) {
             <div className="chat_header">
                 <Avatar/>
                 <div className="chat_header_info">
-                    <h3>Room</h3>
+                    <h3>{currContact.name}</h3>
                     <p>Last see at..</p>
                 </div>
                 <div className="chat_header_right">
@@ -37,7 +37,7 @@ function Chat({messages,currContact}) {
             </div>
             <div className="chat_body">
                 {messages.map((message)=>(                    
-                    <p className={"chat_message "+ (message.recieved?"chat_reciever":"")}>
+                    <p key={message._id} className={"chat_message "+ (message.recieved?"chat_reciever":"")}>
                         <span>{message.content}</span>
                         <span className="chat_timestamp">
                             {message.timeStamp}

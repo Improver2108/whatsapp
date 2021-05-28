@@ -54,6 +54,18 @@
     flex:1;
     background-color: white;
     margin-left: scroll;
+    overflow-y: scroll;
+}
+.sidebar_addContact{
+    display: flex;
+    align-items: center;
+    height: 39px;
+    padding: 10px;
+    background-color: white;
+    border-bottom: 1px solid #f6f6f6;
+}
+.sidebar_addContact:hover{
+    background-color: #ebebeb;
 }
 
 

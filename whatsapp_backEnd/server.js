@@ -49,6 +49,7 @@ db.once("open",()=>{
         }        
     });
     contactChangeStream.on("change",(change)=>{
+        console.log(change.operationType)
         if(change.operationType==='insert'){
             const contactDetails=change.fullDocument;
             pusher.trigger('contacts','inserted',{
@@ -97,7 +98,7 @@ app.post("/user/new", (req,res)=>{
             res.status(201).send(user)    
     });
 });
-app.post("/:user_id/newContact/", (req,res)=>{
+app.post("/:user_id/newContact", (req,res)=>{
     const dbComment=req.body;
     Users.findById(req.params.user_id,(err,user)=>{
         if(err)
@@ -109,7 +110,7 @@ app.post("/:user_id/newContact/", (req,res)=>{
                 else{
                     user.contacts.push(contact);
                     user.save();
-                    res.status(201).send(user);
+                    res.status(201).send(contact);
                 }
             });
         }    

@@ -10,18 +10,18 @@ function App() {
   const [messages,setMessages]=useState([]);
   const [contacts,setContacts]=useState([]);
   const [currContact,setCurrContact]=useState(()=>'')
-  const handleChatChange= async(contact_id)=>{
-    setCurrContact(contact_id)
-    await axios.get('/'+contact_id+'/messages').then(response=>{
+  const handleChatChange= async(contact)=>{
+    setCurrContact(contact)
+    await axios.get('/'+contact._id+'/messages').then(response=>{
       setMessages(response.data);
     }) 
   }
   useEffect(()=>{
     axios.get('/60aeb69705c362130f39cbee').then(response=>{
       setUser(response.data)
-    })
-    axios.get('/'+user+'/contacts').then(response=>{
-      setContacts(response.data);
+      return axios.get('/'+response.data+'/contacts')
+    }).then(response=>{
+      setContacts(response.data)
     });
   },[user]);
 
@@ -48,7 +48,7 @@ function App() {
   return (
     <div className="app">
       <div className="app_body">
-        <Sidebar contacts={contacts} action={(contact_id)=>handleChatChange(contact_id)}/>
+        <Sidebar contacts={contacts} action={(contact_id)=>handleChatChange(contact_id)} user={user}/>
         <Chat messages={messages} currContact={currContact}/>
       </div>
     </div>
