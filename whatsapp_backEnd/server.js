@@ -55,8 +55,9 @@ db.once("open",()=>{
             pusher.trigger('contacts','inserted',{
                messages:contactDetails.messages,
                name:contactDetails.name,
-               id:contactDetails._id 
+               _id:contactDetails._id 
             });
+            console.log("new contact added")
         }else{
             console.log("errror triggering contacts pusher");
         }

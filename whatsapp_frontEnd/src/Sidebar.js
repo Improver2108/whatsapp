@@ -10,9 +10,10 @@ import axios from "./axios";
 function Sidebar({contacts,action,user}) {
     const addContact=async ()=>{
         let name=prompt("Enter the name of the Contact");
-        await axios.post('/'+user+'/newContact',{
+        let contact=await axios.post('/'+user+'/newContact',{
             name:name
-        })
+        });
+        console.log("contact added:",contact);
     }
     return (
         <div className="sidebar">

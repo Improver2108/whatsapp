@@ -13,6 +13,7 @@ function App() {
   const handleChatChange= async(contact)=>{
     setCurrContact(contact)
     await axios.get('/'+contact._id+'/messages').then(response=>{
+      console.log(response.data);
       setMessages(response.data);
     }) 
   }
@@ -23,7 +24,7 @@ function App() {
     }).then(response=>{
       setContacts(response.data)
     });
-  },[user]);
+  },[]);
 
 
   useEffect(()=>{
@@ -36,6 +37,7 @@ function App() {
       setMessages([...messages,newMessage]);//push new message persisting existing one
     });
     contacts_channel.bind("inserted", (newContacts) =>{
+      console.log(newContacts)
       setContacts([...contacts,newContacts]);//push new rooms persisting existing one
     });
     return ()=>{
