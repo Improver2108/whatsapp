@@ -7,7 +7,7 @@ function SidebarChat({contact,onClick}) {
         <div className="sidebarChat" onClick={onClick}>
             <Avatar></Avatar>
             <div className="sidebarChat_info">
-                <h2>{contact.name}</h2>
+                <h2>{contact.reciever_name}</h2>
                 <p>this is the last message</p>
             </div>
         </div>

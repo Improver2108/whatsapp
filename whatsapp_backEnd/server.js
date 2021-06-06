@@ -2,10 +2,11 @@
 import express from 'express';
 import mongooose from 'mongoose';
 import Users from  './models/User.js';
-import Messages from  './models/Message.js';
 import Contacts from './models/Contact.js';
+import Messages from  './models/Message.js';
 import Pusher from 'pusher';
 import cors from 'cors';  
+import User from './models/User.js';
 
 //app config
 const app=express();
@@ -32,109 +33,133 @@ mongooose.connect(connection_url,{
 const db=mongooose.connection;
 db.once("open",()=>{
     console.log("DB connected");
+    const contactCollection=db.collection("contacts");
+    const contactChangeStream=contactCollection.watch();
+    contactChangeStream.on("change",(change)=>{
+        if(change.operationType==='insert'){
+            const contactDetails=change.fullDocument
+            console.log(contactDetails);
+            pusher.trigger('contacts','inserted',{
+                _id:contactDetails._id,
+                reciever_name:contactDetails.reciever_name,
+                reciever_id:contactDetails.reciever_id,
+            })
+        }
+    });
     const messageCollection=db.collection("messages");
-    const contactsCollection=db.collection("contacts")
     const messageChangeStream=messageCollection.watch();
-    const contactChangeStream=contactsCollection.watch();
     messageChangeStream.on("change",(change)=>{
         if(change.operationType==='insert'){
             const messageDetails=change.fullDocument;
+            console.log(messageDetails);
             pusher.trigger('messages','inserted',{
-                content:messageDetails.content,
+                _id:messageDetails._id,
+                timeStamp:messageDetails.timeStamp,
                 recieved:messageDetails.recieved,
-                timeStamp:messageDetails.timeStamp
-            });
-        }else{
-            console.log("error triggring messages pusher")
-        }        
-    });
-    contactChangeStream.on("change",(change)=>{
-        console.log(change.operationType)
-        if(change.operationType==='insert'){
-            const contactDetails=change.fullDocument;
-            pusher.trigger('contacts','inserted',{
-               messages:contactDetails.messages,
-               name:contactDetails.name,
-               _id:contactDetails._id 
-            });
-            console.log("new contact added")
-        }else{
-            console.log("errror triggering contacts pusher");
+                content:messageDetails.content
+            })
         }
-    });
+    })
 });
 
 
 //???
 
 //api routes
-app.get("/60aeb69705c362130f39cbee",async (req,res)=>res.status(200).send("60aeb69705c362130f39cbee"));
+//get apis
+app.get("/:user_id/",(req,res)=>{
+    User.findById(req.params.user_id).exec((err,user)=>{
+        if(err)
+            res.status(500).send(err);
+        else
+            res.status(200).send(user)
+    });
+})
 
 
 
 app.get('/:user_id/contacts',async (req,res)=>{
-    await Users.findById(req.params.user_id).lean().populate('contacts').exec((err,user)=>{
+    Contacts.find({"sender_id":req.params.user_id}).lean().exec((err,contacts)=>{
         if(err)
             res.status(500).send(err);
         else
-            res.status(200).send(user.contacts);
+            res.status(200).send(contacts);
     })
 });
 
-app.get('/:contact_id/messages',async (req,res)=>{
-    await Contacts.findById(req.params.contact_id).lean().populate('messages').exec((err,contact)=>{
+app.get('/:user_id/:contact_id/messages',async (req,res)=>{
+    const contact=await Contacts.findOne({"sender_id":req.params.user_id,"reciever_id":req.params.contact_id})
+    await contact.populate('messages').execPopulate((err,contact)=>{
         if(err)
             res.status(500).send(err);
         else
-            res.status(200).send(contact.messages)    
-    })
+            res.status(200).send(contact.messages)
+    });
 });
-
+//post apis
 app.post("/user/new", (req,res)=>{
     const dbUser=req.body;
     Users.create(dbUser,(err,user)=>{        
         if(err) 
             res.status(500).send(err)
         else 
+            console.log(user._id)
             res.status(201).send(user)    
     });
 });
-app.post("/:user_id/newContact", (req,res)=>{
-    const dbComment=req.body;
-    Users.findById(req.params.user_id,(err,user)=>{
+app.post("/:user_id/newContact/",(req,res)=>{
+    const dbContact=req.body;
+    User.findById(req.params.user_id).exec(async (err,user)=>{
         if(err)
-            res.status(500).send(err);
+            res.status(500).send(err)
         else{
-            Contacts.create(dbComment,(err,contact)=>{
-                if(err)
-                    res.status(500).send(err);
-                else{
-                    user.contacts.push(contact);
-                    user.save();
-                    res.status(201).send(contact);
-                }
-            });
-        }    
-    });
+            await Contacts.create({"reciever_id":dbContact._id,"sender_id":req.params.user_id,"reciever_name":dbContact.name});
+            await Contacts.create({"sender_id":dbContact._id,"reciever_id":req.params.user_id,"reciever_name":user.name});
+        }
+    })
+    
 });
-app.post("/:contact_id/newMessage/", (req,res)=>{
-    const dbMessage=req.body;
-    Contacts.findById(req.params.contact_id,(err,contact)=>{
+app.post("/:user_id/:contact_id/newMessage/", async (req,res)=>{
+    const dbMessage=req.body
+    Messages.create(dbMessage,async(err,message)=>{
         if(err)
             res.status(500).send(err);
         else{
-            Messages.create(dbMessage,(err,message)=>{
+            Contacts.findOne({"sender_id":req.params.user_id,"reciever_id":req.params.contact_id}).exec((err,contact)=>{
                 if(err)
-                    res.status(500).send(err);
+                    res.status(500).send(err)
                 else{
                     contact.messages.push(message);
                     contact.save();
-                    res.status(201).send(contact);
                 }
-            });
-        }    
+            })
+            Contacts.findOne({"sender_id":req.params.contact_id,"reciever_id":req.params.user_id}).exec((err,contact)=>{
+                if(err)
+                    res.status(500).send(err)
+                else{
+                    contact.messages.push(message._id);
+                    contact.save();
+                }
+            })
+            res.status(201).send(message);
+        }
+    })
+    
+});
+//delete apis
+app.delete('/:user_id/:contact_id/deleteContact',(req,res)=>{
+    Messages.deleteOne({"sender_id":req.params.user_id,"reciever_id":req.params.contact_id}).exec((err,contact)=>{
+        if(err)
+            res.status(500).send(err);
+        else
+            res.send(202).send(contact)
+    });
+    Messages.deleteOne({"sender_id":req.params.contact_id,"reciever_id":req.params.user_id}).exec((err,contact)=>{
+        if(err)
+            res.status(500).send(err);
+        else
+            res.send(202).send(contact)
     });
 });
-
 //listen
 app.listen(port,()=>console.log('im working on localhost:'+port));

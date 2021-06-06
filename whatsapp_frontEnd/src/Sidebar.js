@@ -10,10 +10,11 @@ import axios from "./axios";
 function Sidebar({contacts,action,user}) {
     const addContact=async ()=>{
         let name=prompt("Enter the name of the Contact");
-        let contact=await axios.post('/'+user+'/newContact',{
-            name:name
+        let _id=prompt("Enter the id of the contact")
+        await axios.post('/'+user._id+'/newContact',{
+            name:name,
+            _id:_id
         });
-        console.log("contact added:",contact);
     }
     return (
         <div className="sidebar">
@@ -46,7 +47,7 @@ function Sidebar({contacts,action,user}) {
                     <SidebarChat key={contact._id} contact={contact} onClick={()=>action(contact)}/>
                 ))}
             </div>
-        </div>
+        </div> 
     );
 }
 

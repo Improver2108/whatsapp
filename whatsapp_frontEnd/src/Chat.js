@@ -5,22 +5,23 @@ import MicIcon from '@material-ui/icons/Mic';
 import React, { useState } from 'react';
 import axios from './axios';
 import "./Chat.css";
-function Chat({messages,currContact}) {
+function Chat({currContact,user,messages}) {
     const [input,setInput]=useState('');
     const sendMessage=async (e)=>{
         e.preventDefault();
-        await axios.post('/'+currContact._id+'/newMessage',{
+        axios.post('/'+user._id+'/'+currContact.reciever_id+'/newMessage',{
             content:input,
             recieved:false
         });
         setInput('');
+    
     };
     return (
         <div class="chat">
             <div className="chat_header">
                 <Avatar/>
                 <div className="chat_header_info">
-                    <h3>{currContact.name}</h3>
+                    <h3>{currContact.reciever_name}</h3>
                     <p>Last see at..</p>
                 </div>
                 <div className="chat_header_right">

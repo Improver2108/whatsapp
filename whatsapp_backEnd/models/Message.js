@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
-const Schema=mongoose.Schema
+const Schema=mongoose.Schema;
 const messageSchema=Schema({
     content:String,
-    recieved:Boolean,
-    timeStamp:{ type : Date, default: Date.now }
+    timeStamp:{type:Date,default:Date.now},
+    recieved:Boolean
 })
 export default mongoose.model('Message',messageSchema);
-

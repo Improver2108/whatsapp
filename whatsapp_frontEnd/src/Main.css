@@ -1,11 +1,11 @@
-.app{
+.main{
     display: grid;
     place-items: center;
     height:100vh;
     background-color: #dadbd3; 
 }
 
-.app_body{
+.main_body{
     display: flex;
     background-color: #ededed;
     margin-top: -50px;
